@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -11,6 +12,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/organization', [OrganizationController::class, 'index']);
     Route::post('/organization/create', [OrganizationController::class, 'create']);
     Route::post('/organization/join', [OrganizationController::class, 'join']);
+
+    Route::get('/meeting', [MeetingController::class, 'index']);
+    Route::post('/meeting', [MeetingController::class, 'create']);
 });
 
 Route::post('/register', [UserController::class, 'register']);
