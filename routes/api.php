@@ -13,7 +13,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/organization/create', [OrganizationController::class, 'create']);
     Route::post('/organization/join', [OrganizationController::class, 'join']);
 
-    Route::get('/meeting', [MeetingController::class, 'index']);
+    Route::get('/organization/members/{organization_id}', [OrganizationController::class, 'members']);
+    Route::get('/organization/meetings/{organization_id}', [MeetingController::class, 'index'])
+            ->middleware('ensure-user-is-in-organization');
+    
     Route::post('/meeting', [MeetingController::class, 'create']);
 });
 

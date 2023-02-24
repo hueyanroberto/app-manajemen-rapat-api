@@ -11,6 +11,7 @@ use App\Models\UserMeeting;
 use App\Models\UserOrganization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class MeetingController extends Controller
 {
@@ -72,25 +73,21 @@ class MeetingController extends Controller
         return MeetingResource::collection([$meeting]);
     }
 
-    public function index(Request $request)
+    public function index($organization_id)
     {
         date_default_timezone_set("Asia/Jakarta");
-        $request->validate([
-            'organization_id' => 'required|integer'
-        ]); 
-
-        $organization_id = $request['organization_id'];
 
         $user = Auth::user();
-        $userOrganization = UserOrganization::where('user_id', $user->id)->where('organization_id', $organization_id)->first();
-        if ($userOrganization) {
-            $organization = Organization::where('id', $organization_id)->first();
-            $organization->loadMissing('meetings');
+        $organization = Organization::where('id', $organization_id)->first();
+        $meetings = DB::table('meetings')
+                    ->join('user_meeting', 'meetings.id', '=', 'user_meeting.meeting_id')
+                    ->select('meetings.*')
+                    ->where('meetings.organization_id', $organization->id)
+                    ->where('user_meeting.user_id', $user->id)
+                    ->orderBy('start_time', 'DESC')->get();
 
-            return MeetingResource::collection($organization['meetings']);
-        } else {
-            return response()->json(['status' => 'unauthorized', 'data' => null]);
-        }
+        return MeetingResource::collection($meetings);
+        
     }
 
     function generateRandomString($length = 30) {

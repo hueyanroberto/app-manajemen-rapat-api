@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrganizationResource;
+use App\Http\Resources\UserListResource;
 use App\Models\Organization;
 use App\Models\User;
 use App\Models\UserOrganization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class OrganizationController extends Controller
 {
@@ -100,6 +102,26 @@ class OrganizationController extends Controller
         }
 
         return OrganizationResource::collection($organizations);
+    }
+
+    public function members($organizationId)
+    {
+        $users = User::join('user_organization', 'users.id', '=', 'user_organization.user_id')
+                    ->select('users.*')
+                    ->where('user_organization.organization_id', $organizationId)
+                    ->orderBy('users.name', 'ASC')->get();
+
+        foreach ($users as $user) {
+            $user->loadMissing('level:id,name,exp,level,badge_url');
+            $userOrganization = UserOrganization::where('user_id', $user->id)
+                    ->where('organization_id', $organizationId)
+                    ->first();
+
+            $userOrganization->loadMissing('role');
+            $user["role"] = $userOrganization["role"];
+        }
+        
+        return UserListResource::collection($users);
     }
 
     function generateRandomString($length = 30) {
