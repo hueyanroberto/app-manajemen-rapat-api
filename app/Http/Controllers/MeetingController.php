@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MeetingResource;
+use App\Http\Resources\UserListResource;
 use App\Models\Agenda;
 use App\Models\Meeting;
 use App\Models\Organization;
+use App\Models\User;
 use App\Models\UserMeeting;
 use App\Models\UserOrganization;
 use Illuminate\Http\Request;
@@ -88,6 +90,34 @@ class MeetingController extends Controller
 
         return MeetingResource::collection($meetings);
         
+    }
+
+    public function chooseMember(Request $request)
+    {
+        $request->validate([
+            'organizationId' => 'required|integer'
+        ]); 
+
+        $organizationId = $request['organizationId'];
+
+        $user = Auth::user();
+        $users = User::join('user_organization', 'users.id', '=', 'user_organization.user_id')
+                    ->select('users.*')
+                    ->where('user_organization.organization_id', $organizationId)
+                    ->where('users.id', '!=', $user->id)
+                    ->orderBy('users.name', 'ASC')->get();
+
+        foreach ($users as $user) {
+            $user->loadMissing('level:id,name,exp,level,badge_url');
+            $userOrganization = UserOrganization::where('user_id', $user->id)
+                    ->where('organization_id', $organizationId)
+                    ->first();
+
+            $userOrganization->loadMissing('role');
+            $user["role"] = $userOrganization["role"];
+        }
+        
+        return UserListResource::collection($users);
     }
 
     function generateRandomString($length = 30) {
