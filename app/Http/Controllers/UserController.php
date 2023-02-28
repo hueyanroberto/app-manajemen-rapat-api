@@ -84,4 +84,9 @@ class UserController extends Controller
 
         return new UserResource($userGet->loadMissing('level:id,name,exp,level,badge_url'));
     }
+
+    public function logout(Request $request) {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json(['status' => 'success']);
+    }
 }

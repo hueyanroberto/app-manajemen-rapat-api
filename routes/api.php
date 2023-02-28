@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\UserController;
@@ -7,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/logout', [UserController::class, 'logout']);
     Route::put('/register', [UserController::class, 'updateName']);
 
     Route::get('/organization', [OrganizationController::class, 'index']);
@@ -19,6 +21,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     Route::get('/meeting/create/member', [MeetingController::class, 'chooseMember']);
     Route::post('/meeting', [MeetingController::class, 'create']);
+    Route::get('/meeting', [MeetingController::class, 'show']);
+
+    Route::post('/agenda', [AgendaController::class, 'store']);
 });
 
 Route::post('/register', [UserController::class, 'register']);

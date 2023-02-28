@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\MeetingDetailResource;
 use App\Http\Resources\MeetingResource;
 use App\Http\Resources\UserListResource;
 use App\Models\Agenda;
@@ -11,6 +12,7 @@ use App\Models\Organization;
 use App\Models\User;
 use App\Models\UserMeeting;
 use App\Models\UserOrganization;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -67,7 +69,11 @@ class MeetingController extends Controller
         if ($request['participants']) {
             $participants = $request['participants'];
             foreach ($participants as $participant_id) {
-                $userMeeting = new UserMeeting(['user_id' => $participant_id, 'meeting_id' => $meeting->id]);
+                $userMeeting = new UserMeeting([
+                    'user_id' => $participant_id, 
+                    'meeting_id' => $meeting->id, 
+                    'status' => 1
+                ]);
                 $userMeeting->save();
             }
         }
@@ -119,6 +125,47 @@ class MeetingController extends Controller
         
         return UserListResource::collection($users);
     }
+
+    public function show(Request $request)
+    {
+        $request->validate([
+            'meeting_id' => 'required|integer'
+        ]); 
+
+        $user = Auth::user();
+
+        try {
+            $meeting = Meeting::findOrFail($request['meeting_id']);
+
+            $userMeeting = UserMeeting::where('meeting_id', $meeting->id)
+                ->where('user_id', $user->id)->first();
+        
+            $agenda = Agenda::select('agendas.id', 'agendas.meeting_id', 'agendas.task', 'agendas.completed')
+                ->where('meeting_id', $meeting->id)->get();
+            
+            $participants = User::join('user_meeting', 'users.id', '=', 'user_meeting.user_id')
+                ->select('users.id', 'users.email', 'users.name', 'users.profile_pic', 'user_meeting.status')
+                ->where('user_meeting.meeting_id', $meeting->id)
+                ->orderBy('users.name', 'ASC')->get();
+
+            foreach($participants as $participant) {
+                $userOrganization = UserOrganization::where('user_id', $participant->id)
+                    ->where('organization_id', $meeting->organization_id)->first();
+                $userOrganization->loadMissing('role:id,name');
+                $participant['role'] = $userOrganization['role']->name;
+            }
+
+            $meeting['user_status'] = $userMeeting->status;
+            $meeting['agendas'] = $agenda;
+            $meeting['participants'] = $participants;
+
+            return new MeetingDetailResource($meeting);
+        } catch (Exception $e) {
+            return response()->json(["data" => null]);
+        }
+    }
+
+
 
     function generateRandomString($length = 30) {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
