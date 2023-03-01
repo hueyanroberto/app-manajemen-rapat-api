@@ -124,6 +124,34 @@ class OrganizationController extends Controller
         return UserListResource::collection($users);
     }
 
+    public function changeRole(Request $request) {
+        $request->validate([
+            'organization_id' => 'required|integer',
+            'user_id' => 'required|integer',
+            'role_id' => 'required|integer|min:2|max:3'
+        ]); 
+
+        $user = Auth::user();
+        $myUserOrganization = UserOrganization::where('organization_id', $request['organization_id'])->where('user_id', $user->id)->first();
+        if ($myUserOrganization->role_id != 1) {
+            return response()->json(['status' => 'unauthorized', 'data' => null]);
+        }
+
+        $user = User::where('id', $request['user_id'])->first();
+        $user->loadMissing('level:id,name,exp,level,badge_url');
+
+        $userOrganization = UserOrganization::where('organization_id', $request['organization_id'])
+            ->where('user_id', $request['user_id'])
+            ->update(['role_id' => $request['role_id']]);
+        
+        $userOrganization = UserOrganization::where('organization_id', $request['organization_id'])
+            ->where('user_id', $request['user_id'])->first();
+        $userOrganization->loadMissing('role');
+        $user["role"] = $userOrganization["role"];
+
+        return new UserListResource($user);
+    }
+
     function generateRandomString($length = 30) {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $charactersLength = strlen($characters);

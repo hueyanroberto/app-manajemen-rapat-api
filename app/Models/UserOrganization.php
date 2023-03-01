@@ -11,7 +11,6 @@ class UserOrganization extends Model
     use HasFactory;
 
     protected $table = 'user_organization';
-
     protected $fillable = ["user_id", "organization_id", "points_get", "role_id"];
 
     /**
