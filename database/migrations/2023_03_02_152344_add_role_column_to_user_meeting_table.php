@@ -14,7 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('user_meeting', function (Blueprint $table) {
-            $table->integer('status')->default(0)->after("meeting_id");
+            $table->integer('role')->default(2)->after("status");
         });
     }
 
@@ -26,8 +26,8 @@ return new class extends Migration
     public function down()
     {
         Schema::table('user_meeting', function (Blueprint $table) {
-            if (Schema::hasColumn('user_meeting', 'status')) {
-                $table->dropColumn('status');
+            if (Schema::hasColumn('user_meeting', 'role')) {
+                $table->dropColumn('role');
             }
         });
     }

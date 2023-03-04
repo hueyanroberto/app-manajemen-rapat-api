@@ -10,5 +10,5 @@ class UserMeeting extends Model
     use HasFactory;
 
     protected $table = 'user_meeting';
-    protected $fillable = ["user_id", "meeting_id", "status"];
+    protected $fillable = ["user_id", "meeting_id", "status", "role"];
 }

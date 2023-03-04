@@ -44,4 +44,20 @@ class SuggestionController extends Controller
 
         return new SuggestionResource($suggestion);
     }
+
+    public function changeAcceptanceStatus(Request $request)
+    {
+        $request->validate([
+            'suggestion_id' => 'required|integer'
+        ]);
+
+        $suggestion = Suggestion::findOrFail($request['suggestion_id']);
+        $acceptance = $suggestion->accepted == 0 ? 1 : 0;
+        $suggestion->update(['accepted' => $acceptance]);
+        
+        $user = User::where('id', $suggestion->user_id)->first();
+        $suggestion['user'] = $user->name;
+
+        return new SuggestionResource($suggestion);
+    }
 }

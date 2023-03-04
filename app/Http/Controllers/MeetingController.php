@@ -63,7 +63,7 @@ class MeetingController extends Controller
         }
 
         $user = Auth::user();
-        $userMeeting = new UserMeeting(['user_id' => $user->id, 'meeting_id' => $meeting->id]);
+        $userMeeting = new UserMeeting(['user_id' => $user->id, 'meeting_id' => $meeting->id, 'role' => 1]);
         $userMeeting->save();
         
         if ($request['participants']) {
@@ -71,8 +71,7 @@ class MeetingController extends Controller
             foreach ($participants as $participant_id) {
                 $userMeeting = new UserMeeting([
                     'user_id' => $participant_id, 
-                    'meeting_id' => $meeting->id, 
-                    'status' => 1
+                    'meeting_id' => $meeting->id
                 ]);
                 $userMeeting->save();
             }
@@ -156,6 +155,7 @@ class MeetingController extends Controller
             }
 
             $meeting['user_status'] = $userMeeting->status;
+            $meeting['user_role'] = $userMeeting->role;
             $meeting['agendas'] = $agenda;
             $meeting['participants'] = $participants;
 

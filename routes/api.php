@@ -29,6 +29,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/agenda/suggestion', [SuggestionController::class, 'index']);
     Route::post('/agenda/suggestion', [SuggestionController::class, 'store']);
+    Route::put('/agenda/suggestion/accept', [SuggestionController::class, 'changeAcceptanceStatus']);
 });
 
 Route::post('/register', [UserController::class, 'register']);
