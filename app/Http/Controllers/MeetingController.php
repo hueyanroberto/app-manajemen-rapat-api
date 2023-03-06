@@ -165,7 +165,108 @@ class MeetingController extends Controller
         }
     }
 
+    public function joinMeeting(Request $request)
+    {
+        $request->validate([
+            'meeting_id' => 'required|integer',
+            'meeting_code' => 'required',
+            'date' => 'required|date'
+        ]); 
 
+        $user = Auth::user();
+        $meeting = Meeting::findOrFail($request['meeting_id']);
+        $code = $request['meeting_code'];
+
+        if ($code != $meeting->code) {
+            return response()->json(['status' => 'wrong code', 'data' => null]);
+        }
+
+        date_default_timezone_set("Asia/Jakarta");
+        $date = strtotime($request['date']);
+        $meetDate = strtotime($meeting->start_time);
+
+        if ($date <= $meetDate) {
+            //onTime
+        } else{
+            //late
+        }
+
+        UserMeeting::where('meeting_id', $meeting->id)
+                ->where('user_id', $user->id)
+                ->update(['status' => 1]);
+
+        return $this->show($request);
+    }
+
+    public function startMeeting(Request $request)
+    {
+        $request->validate([
+            'meeting_id' => 'required|integer',
+            'date' => 'required|date'
+        ]); 
+
+        $user = Auth::user();
+        $meeting = Meeting::findOrFail($request['meeting_id']);
+
+        $userMeeting = UserMeeting::where('meeting_id', $meeting->id)
+            ->where('user_id', $user->id)->first();
+
+        if ($userMeeting->role != 1) {
+            return response()->json(['status' => 'unauthenticated', 'data' => null]);
+        }
+
+        date_default_timezone_set("Asia/Jakarta");
+        $date = strtotime($request['date']);
+        $meetDate = strtotime($meeting->start_time);
+
+        if ($date <= $meetDate) {
+            //onTime
+        } else{
+            //late
+        }
+
+        Meeting::where('id', $meeting->id)
+                ->update(['status' => 1]);
+
+        UserMeeting::where('meeting_id', $meeting->id)
+                ->where('user_id', $user->id)
+                ->update(['status' => 1]);
+
+        return $this->show($request);
+    }
+
+    public function endMeeting(Request $request)
+    {
+        $request->validate([
+            'meeting_id' => 'required|integer',
+            'date' => 'required|date'
+        ]); 
+
+        $user = Auth::user();
+        $meeting = Meeting::findOrFail($request['meeting_id']);
+
+        $userMeeting = UserMeeting::where('meeting_id', $meeting->id)
+            ->where('user_id', $user->id)->first();
+
+        if ($userMeeting->role != 1) {
+            return response()->json(['status' => 'unauthenticated', 'data' => null]);
+        }
+
+        date_default_timezone_set("Asia/Jakarta");
+        $date = strtotime($request['date']);
+        $endDate = strtotime($meeting->end_time);
+
+        if ($date <= $endDate) {
+            //onTime
+        } else{
+            //late
+        }
+
+        Meeting::where('id', $meeting->id)
+                ->update(['status' => 2]);
+                
+        return $this->show($request);
+    }
 
     function generateRandomString($length = 30) {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';

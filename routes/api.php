@@ -5,6 +5,7 @@ use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\SuggestionController;
 use App\Http\Controllers\UserController;
+use App\Models\Meeting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -13,6 +14,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/register', [UserController::class, 'updateName']);
 
     Route::get('/organization', [OrganizationController::class, 'index']);
+    Route::put('/organization', [OrganizationController::class, 'update']);
+    Route::put('/organization/profile', [OrganizationController::class, 'updateProfilePic']);
     Route::post('/organization/create', [OrganizationController::class, 'create']);
     Route::post('/organization/join', [OrganizationController::class, 'join']);
 
@@ -24,6 +27,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/meeting/create/member', [MeetingController::class, 'chooseMember']);
     Route::post('/meeting', [MeetingController::class, 'create']);
     Route::get('/meeting', [MeetingController::class, 'show']);
+    Route::post('/meeting/join', [MeetingController::class, 'joinMeeting']);
+    Route::post('/meeting/start', [MeetingController::class, 'startMeeting']);
+    Route::post('/meeting/end', [MeetingController::class, 'endMeeting']);
 
     Route::post('/agenda', [AgendaController::class, 'store']);
 

@@ -104,6 +104,38 @@ class OrganizationController extends Controller
         return OrganizationResource::collection($organizations);
     }
 
+    public function update(Request $request)
+    {
+        $request->validate([
+            'organization_id' => 'required|integer',
+            'name' => 'required|min:2|max:45',
+            'description' => 'required'
+        ]); 
+
+        $organization = Organization::findOrFail($request['organization_id']);
+        $organization->update($request->only(['name', 'description']));
+
+        return OrganizationResource::collection([$organization]);
+    }
+
+
+    public function updateProfilePic(Request $request)
+    {
+        $request->validate([
+            'organization_id' => 'required|integer',
+            'profile_pic' => 'required'
+        ]); 
+
+        $organization = Organization::findOrFail($request['organization_id']);
+
+        $image = base64_decode($request["profile_pic"]);
+        $filename = "organization-" . $organization->id . ".jpg";
+        file_put_contents('Asset/Profile/Organization/'.$filename, $image);
+        $organization->update(["profile_pic" => $filename]);
+
+        return OrganizationResource::collection([$organization]);
+    }
+
     public function members($organizationId)
     {
         $users = User::join('user_organization', 'users.id', '=', 'user_organization.user_id')
