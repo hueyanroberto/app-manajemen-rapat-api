@@ -27,15 +27,23 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/meeting/create/member', [MeetingController::class, 'chooseMember']);
     Route::post('/meeting', [MeetingController::class, 'create']);
     Route::get('/meeting', [MeetingController::class, 'show']);
+    Route::put('/meeting', [MeetingController::class, 'update']);
+    Route::delete('/meeting', [MeetingController::class, 'delete']);
     Route::post('/meeting/join', [MeetingController::class, 'joinMeeting']);
     Route::post('/meeting/start', [MeetingController::class, 'startMeeting']);
     Route::post('/meeting/end', [MeetingController::class, 'endMeeting']);
 
+    Route::post('/meeting/attachment', [MeetingController::class, 'uploadFile']);
+
     Route::post('/agenda', [AgendaController::class, 'store']);
+    Route::put('/agenda', [AgendaController::class, 'update']);
+    Route::delete('/agenda', [AgendaController::class, 'delete']);
 
     Route::get('/agenda/suggestion', [SuggestionController::class, 'index']);
     Route::post('/agenda/suggestion', [SuggestionController::class, 'store']);
     Route::put('/agenda/suggestion/accept', [SuggestionController::class, 'changeAcceptanceStatus']);
+
+    Route::get('/meeting/minutes', [MeetingController::class, 'getMinutes']);
 });
 
 Route::post('/register', [UserController::class, 'register']);

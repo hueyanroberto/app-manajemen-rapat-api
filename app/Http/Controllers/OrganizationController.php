@@ -131,6 +131,7 @@ class OrganizationController extends Controller
         $image = base64_decode($request["profile_pic"]);
         $filename = "organization-" . $organization->id . ".jpg";
         file_put_contents('Asset/Profile/Organization/'.$filename, $image);
+        
         $organization->update(["profile_pic" => $filename]);
 
         return OrganizationResource::collection([$organization]);
@@ -144,7 +145,7 @@ class OrganizationController extends Controller
                     ->orderBy('users.name', 'ASC')->get();
 
         foreach ($users as $user) {
-            $user->loadMissing('level:id,name,exp,level,badge_url');
+            $user->loadMissing('level:id,name,level,badge_url');
             $userOrganization = UserOrganization::where('user_id', $user->id)
                     ->where('organization_id', $organizationId)
                     ->first();
@@ -170,7 +171,7 @@ class OrganizationController extends Controller
         }
 
         $user = User::where('id', $request['user_id'])->first();
-        $user->loadMissing('level:id,name,exp,level,badge_url');
+        $user->loadMissing('level:id,name,level,badge_url');
 
         $userOrganization = UserOrganization::where('organization_id', $request['organization_id'])
             ->where('user_id', $request['user_id'])

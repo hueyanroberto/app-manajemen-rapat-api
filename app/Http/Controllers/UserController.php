@@ -37,7 +37,7 @@ class UserController extends Controller
 
         $user->save();
 
-        $user->loadMissing('level:id,name,exp,level,badge_url');
+        $user->loadMissing('level:id,name,level,badge_url');
         $user->token = $user->createToken('user login')->plainTextToken;
 
         return new UserAuthResource($user);
@@ -55,7 +55,7 @@ class UserController extends Controller
             return response()->json(['data' => null]);
         }
 
-        $user->loadMissing('level:id,name,exp,level,badge_url');
+        $user->loadMissing('level:id,name,level,badge_url');
         $user["token"] = $user->createToken('user login')->plainTextToken;
 
         return new UserAuthResource($user);
@@ -82,7 +82,7 @@ class UserController extends Controller
 
         $userGet->update($request->all());
 
-        return new UserResource($userGet->loadMissing('level:id,name,exp,level,badge_url'));
+        return new UserResource($userGet->loadMissing('level:id,name,level,badge_url'));
     }
 
     public function logout(Request $request) {

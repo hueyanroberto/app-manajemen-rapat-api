@@ -27,7 +27,8 @@ class MeetingDetailResource extends JsonResource
             'user_status' => $this->user_status,
             'user_role' => $this->user_role,
             'agenda' => $this->agendas,
-            'participant' => $this->participants
+            'participant' => $this->participants,
+            'attachments' => $this->attachments
         ];
     }
 }

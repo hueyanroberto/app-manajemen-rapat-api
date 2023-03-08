@@ -13,15 +13,13 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('levels', function (Blueprint $table) {
+        Schema::create('attachments', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 45);
-            $table->integer('level');
-            $table->integer('min_exp');
-            $table->integer('max_exp');
-            $table->string('badge_url', 255);
+            $table->unsignedBigInteger('meeting_id');
+            $table->text('url');
             $table->timestamps();
-            $table->softDeletes();
+
+            $table->foreign('meeting_id')->references('id')->on('meetings');
         });
     }
 
@@ -32,6 +30,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('levels');
+        Schema::dropIfExists('attachments');
     }
 };

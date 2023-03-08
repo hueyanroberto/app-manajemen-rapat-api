@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AgendaResource;
 use App\Models\Agenda;
+use App\Models\Suggestion;
 use Illuminate\Http\Request;
 
 class AgendaController extends Controller
@@ -42,5 +43,32 @@ class AgendaController extends Controller
                 ->where('meeting_id', $request['meeting_id'])->get();
 
         return AgendaResource::collection($agenda);
+    }
+
+    public function update(Request $request)
+    {
+        $request->validate([
+            'agenda_id' => 'required|integer',
+            'task' => 'required'
+        ]);
+
+        $agenda = Agenda::findOrFail($request['agenda_id']);
+        $agenda->update($request->only('task'));
+
+        return AgendaResource::collection([$agenda]);
+    }
+
+    public function delete (Request $request) 
+    {
+        $request->validate([
+            'agenda_id' => 'required|integer'
+        ]);
+        
+        Suggestion::where('agenda_id', $request['agenda_id'])->delete();
+
+        $agenda = Agenda::findOrFail($request['agenda_id']);
+        $agenda->delete();
+
+        return AgendaResource::collection([$agenda]);
     }
 }

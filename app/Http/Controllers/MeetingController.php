@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AttachmentResource;
 use App\Http\Resources\MeetingDetailResource;
 use App\Http\Resources\MeetingResource;
 use App\Http\Resources\UserListResource;
 use App\Models\Agenda;
+use App\Models\Attachment;
 use App\Models\Meeting;
 use App\Models\Organization;
+use App\Models\Suggestion;
 use App\Models\User;
 use App\Models\UserMeeting;
 use App\Models\UserOrganization;
@@ -97,6 +100,46 @@ class MeetingController extends Controller
         
     }
 
+    public function update(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|max:100',
+            'start_time' => 'required|date',
+            'end_time' => 'required|date',
+            'location' => 'required',
+            'description' => 'required',
+            'meeting_id' => 'required|integer'
+        ]); 
+
+        date_default_timezone_set("Asia/Jakarta");
+        $request['start_time'] = date("Y-m-d H:i:s", strtotime($request['start_time']));
+        $request['end_time'] = date("Y-m-d H:i:s", strtotime($request['end_time']));
+
+        $meeting = Meeting::findOrFail($request['meeting_id']);
+        $meeting->update($request->except('meeting_id'));
+
+        return MeetingResource::collection([$meeting]);
+    }
+
+    public function delete(Request $request) {
+        $request->validate([
+            'meeting_id' => 'required|integer'
+        ]); 
+
+        UserMeeting::where('meeting_id', $request['meeting_id'])->delete();
+
+        $agendas = Agenda::where('meeting_id', $request['meeting_id'])->get();
+        foreach ($agendas as $agenda) {
+            Suggestion::where('agenda_id', $agenda->id)->delete();
+        }
+        Agenda::where('meeting_id', $request['meeting_id'])->delete();
+
+        $meeting = Meeting::findOrFail($request['meeting_id']);
+        $meeting->delete();
+
+        return MeetingResource::collection([$meeting]);
+    }
+
     public function chooseMember(Request $request)
     {
         $request->validate([
@@ -113,7 +156,7 @@ class MeetingController extends Controller
                     ->orderBy('users.name', 'ASC')->get();
 
         foreach ($users as $user) {
-            $user->loadMissing('level:id,name,exp,level,badge_url');
+            $user->loadMissing('level:id,name,level,badge_url');
             $userOrganization = UserOrganization::where('user_id', $user->id)
                     ->where('organization_id', $organizationId)
                     ->first();
@@ -154,10 +197,14 @@ class MeetingController extends Controller
                 $participant['role'] = $userOrganization['role']->name;
             }
 
+            $attachments = Attachment::where('meeting_id', $meeting->id)
+                ->select('id', 'meeting_id', 'url')->get();
+
             $meeting['user_status'] = $userMeeting->status;
             $meeting['user_role'] = $userMeeting->role;
             $meeting['agendas'] = $agenda;
             $meeting['participants'] = $participants;
+            $meeting['attachments'] = $attachments;
 
             return new MeetingDetailResource($meeting);
         } catch (Exception $e) {
@@ -266,6 +313,60 @@ class MeetingController extends Controller
                 ->update(['status' => 2]);
                 
         return $this->show($request);
+    }
+
+    public function getMinutes(Request $request)
+    {
+        $request->validate([
+            'meeting_id' => 'required|integer'
+        ]); 
+
+        $agendas = Agenda::select('agendas.id', 'agendas.meeting_id', 'agendas.task', 'agendas.completed')
+                ->where('meeting_id', $request['meeting_id'])->get();
+
+        foreach ($agendas as $agenda) {
+            $suggestions = Suggestion::where('agenda_id', $agenda->id)
+                ->where('accepted', 1)
+                ->select('id', 'user_id', 'agenda_id', 'suggestion', 'accepted')
+                ->get();
+
+            $agenda->suggestions = $suggestions;
+
+            foreach ($suggestions as $suggestion) {
+                $user = User::where('id', $suggestion->user_id)->first();
+                $suggestion['user'] = $user->name;
+            }
+        }
+
+        return response()->json(['data' => $agendas]);
+    }
+
+    public function uploadFile(Request $request)
+    {
+        $request->validate([
+            'meeting_id' => 'required|integer'
+        ]); 
+
+        $meeting = Meeting::findOrFail($request['meeting_id']);
+
+        $attachments = array();
+
+        foreach ($request->files as $file) {
+            $filenameWithExtension = $file->getClientOriginalName();
+            $filenameWithoutExtension = pathinfo($filenameWithExtension, PATHINFO_FILENAME);
+            $extension = $file->getClientOriginalExtension();
+            $filename = $filenameWithoutExtension . '_' . time() . '.' . $extension;
+            $file->move('Asset/File/'.$meeting->id, $filename);
+
+            $attachment = new Attachment();
+            $attachment->meeting_id = $request['meeting_id'];
+            $attachment->url = $filename;
+            $attachment->save();
+
+            $attachments[] = $attachment;
+        }
+        
+        return AttachmentResource::collection($attachments);
     }
 
     function generateRandomString($length = 30) {
