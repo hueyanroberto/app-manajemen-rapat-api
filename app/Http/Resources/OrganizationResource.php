@@ -14,14 +14,15 @@ class OrganizationResource extends JsonResource
      */
     public function toArray($request)
     {
+        date_default_timezone_set("Asia/Jakarta");
         return [
             'id' => $this->id,
             'name' => $this->name,
             'code' => $this->code,
             'description' => $this->description,
             'profile_pic' => $this->profile_pic ? $this->profile_pic : "",
-            'leaderboard_start' => $this->leaderboard_start,
-            'leaderboard_end' => $this->leaderboard_end,
+            'leaderboard_start' => date("c", strtotime($this->leaderboard_start)),
+            'leaderboard_end' => date("c", strtotime($this->leaderboard_end)),
             'role' => $this->role
         ];
     }

@@ -23,7 +23,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/organization/meetings/{organization_id}', [MeetingController::class, 'index'])
             ->middleware('ensure-user-is-in-organization');
     Route::put('/organization/role', [OrganizationController::class, 'changeRole']);
-    
+    Route::get('/organization/leaderboard', [OrganizationController::class, 'getLeaderboard']);
+
+
     Route::get('/meeting/create/member', [MeetingController::class, 'chooseMember']);
     Route::post('/meeting', [MeetingController::class, 'create']);
     Route::get('/meeting', [MeetingController::class, 'show']);

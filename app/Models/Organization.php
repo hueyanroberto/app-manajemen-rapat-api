@@ -12,7 +12,8 @@ class Organization extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'description', 'profile_pic', 'leaderboard_start', 'leaderboard_end', 'code'
+        'name', 'description', 'profile_pic', 'leaderboard_start', 
+        'leaderboard_end', 'code', 'leaderboard_duration', 'leaderboard_period'
     ];
 
     public function users(): BelongsToMany

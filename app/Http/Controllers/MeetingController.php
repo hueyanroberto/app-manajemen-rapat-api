@@ -9,7 +9,9 @@ use App\Http\Resources\MeetingResource;
 use App\Http\Resources\UserListResource;
 use App\Models\Agenda;
 use App\Models\Attachment;
+use App\Models\Level;
 use App\Models\Meeting;
+use App\Models\MeetingPoint;
 use App\Models\Organization;
 use App\Models\Suggestion;
 use App\Models\User;
@@ -226,6 +228,8 @@ class MeetingController extends Controller
 
         if ($code != $meeting->code) {
             return response()->json(['status' => 'wrong code', 'data' => null]);
+        } else if ($meeting->status == 2) {
+            return response()->json(['status' => 'meeting ended', 'data' => null]);
         }
 
         date_default_timezone_set("Asia/Jakarta");
@@ -233,9 +237,17 @@ class MeetingController extends Controller
         $meetDate = strtotime($meeting->start_time);
 
         if ($date <= $meetDate) {
-            //onTime
-        } else{
-            //late
+            $meetingPoint = new MeetingPoint();
+            $meetingPoint->user_id = $user->id;
+            $meetingPoint->meeting_id = $meeting->id;
+            $meetingPoint->point = 2;
+            $meetingPoint->save();
+        } elseif ($date > $meetDate + 900){
+            $meetingPoint = new MeetingPoint();
+            $meetingPoint->user_id = $user->id;
+            $meetingPoint->meeting_id = $meeting->id;
+            $meetingPoint->point = -2;
+            $meetingPoint->save();
         }
 
         UserMeeting::where('meeting_id', $meeting->id)
@@ -260,18 +272,28 @@ class MeetingController extends Controller
 
         if ($userMeeting->role != 1) {
             return response()->json(['status' => 'unauthenticated', 'data' => null]);
+        } else if ($meeting->status != 0) {
+            return response()->json(['status' => 'meeting started', 'data' => null]);
         }
 
         date_default_timezone_set("Asia/Jakarta");
         $date = strtotime($request['date']);
         $meetDate = strtotime($meeting->start_time);
 
-        if ($date <= $meetDate) {
-            //onTime
-        } else{
-            //late
+        if ($date <= $meetDate + 600) {
+            $meetingPoint = new MeetingPoint();
+            $meetingPoint->user_id = $user->id;
+            $meetingPoint->meeting_id = $meeting->id;
+            $meetingPoint->point = 2;
+            $meetingPoint->save();
+        } elseif ($date > $meetDate + 900) {
+            $meetingPoint = new MeetingPoint();
+            $meetingPoint->user_id = $user->id;
+            $meetingPoint->meeting_id = $meeting->id;
+            $meetingPoint->point = -2;
+            $meetingPoint->save();
         }
-
+        
         Meeting::where('id', $meeting->id)
                 ->update(['status' => 1]);
 
@@ -297,21 +319,78 @@ class MeetingController extends Controller
 
         if ($userMeeting->role != 1) {
             return response()->json(['status' => 'unauthenticated', 'data' => null]);
+        } else if ($meeting->status != 1) {
+            return response()->json(['status' => 'meeting ended/not started', 'data' => null]);
         }
 
         date_default_timezone_set("Asia/Jakarta");
         $date = strtotime($request['date']);
         $endDate = strtotime($meeting->end_time);
 
-        if ($date <= $endDate) {
-            //onTime
-        } else{
-            //late
+        if ($date <= $endDate + 300) {
+            $meetingPoint = new MeetingPoint();
+            $meetingPoint->user_id = $user->id;
+            $meetingPoint->meeting_id = $meeting->id;
+            $meetingPoint->point = 2;
+            $meetingPoint->save();
+        } else {
+            $meetingPoint = new MeetingPoint();
+            $meetingPoint->user_id = $user->id;
+            $meetingPoint->meeting_id = $meeting->id;
+            $meetingPoint->point = -2;
+            $meetingPoint->save();
         }
 
         Meeting::where('id', $meeting->id)
                 ->update(['status' => 2]);
+
+        $acceptedSuggestion = Suggestion::join('meetings', 'meetings.id', '=', 'suggestions.meeting_id')
+                ->select('suggestions.*')
+                ->where('suggestions.accepted', 1)
+                ->where('meetings.id', $meeting->id)
+                ->get();
+
+        foreach($acceptedSuggestion as $suggestion) {
+            $meetingPoint = new MeetingPoint();
+            $meetingPoint->user_id = $suggestion->user_id;
+            $meetingPoint->meeting_id = $meeting->id;
+            $meetingPoint->point = 2;
+            $meetingPoint->save();
+        }
                 
+        $userMeetings = UserMeeting::where('meeting_id', $meeting->id)->get();
+        foreach($userMeetings as $userMeeting) {
+            $userPoint = DB::table('meeting_points')
+                            ->where('user_id'. $userMeeting->user_id)
+                            ->sum('point');
+
+            if ($userPoint > 0) {
+                $currUser = User::where('id', $userMeeting->user_id)->first();
+                $currUser->loadMissing('level');
+
+                $isLevelUp = false;
+                if ($currUser->exp + $userPoint > $currUser->level->max_exp) {
+                    $isLevelUp = true;
+                }
+
+                $updateValue = ['exp' => $currUser->exp + $userPoint];
+                if ($isLevelUp && $currUser->level->level < 6) {
+                    $nextLevel = $currUser->level->level + 1;
+                    $level = Level::where('level', $nextLevel)->first();
+                    $updateValue[] = ['level_id', $level->id];
+                }
+                User::where('id', $userMeeting->user_id)->update($updateValue);
+                
+                $userOrganization = UserOrganization::where('user_id', $userMeeting->id)
+                    ->where('organization_id', $meeting->organization_id)->first();
+                $pointsGet = $userOrganization->points_get + $userPoint;
+                $userOrganization->update(['points_get', $pointsGet]);
+                //send notif
+            } else {
+                //send notif
+            }
+        }
+
         return $this->show($request);
     }
 

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SuggestionResource;
+use App\Models\Agenda;
+use App\Models\MeetingPoint;
 use App\Models\Suggestion;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -32,6 +34,8 @@ class SuggestionController extends Controller
             'suggestion' => 'required'
         ]);
 
+        $agenda = Agenda::findOrFail($request['agenda_id']);
+
         $user = Auth::user();
         $suggestion = new Suggestion();
         $suggestion->user_id = $user->id;
@@ -41,6 +45,12 @@ class SuggestionController extends Controller
 
         $user = User::where('id', $suggestion->user_id)->first();
         $suggestion['user'] = $user->name;
+
+        $meetingPoint = new MeetingPoint();
+        $meetingPoint->user_id = $user->id;
+        $meetingPoint->meeting_id = $agenda->meeting_id;
+        $meetingPoint->point = 1;
+        $meetingPoint->save();
 
         return new SuggestionResource($suggestion);
     }

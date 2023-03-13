@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\LeaderboardResource;
 use App\Http\Resources\OrganizationResource;
 use App\Http\Resources\UserListResource;
+use App\Models\Level;
 use App\Models\Organization;
 use App\Models\User;
 use App\Models\UserOrganization;
@@ -18,7 +20,8 @@ class OrganizationController extends Controller
     {
         $request->validate([
             'name' => 'required|min:2|max:45',
-            'description' => 'required'
+            'description' => 'required',
+            'duration' => 'required|integer'
         ]); 
 
         $code = $this->generateRandomString(7);
@@ -35,7 +38,19 @@ class OrganizationController extends Controller
             }
         }
 
-        $organization = new Organization($request->only(['name', 'description', 'code']));
+        date_default_timezone_set("Asia/Jakarta");
+        $leaderboardStart = date("Y-m-d");
+        $currTime = strtotime($leaderboardStart);
+        $leaderboardEnd = date("Y-m-d", strtotime("+". $request['duration'] ." month", $currTime));
+
+        $organization = new Organization();
+        $organization->name = $request['name'];
+        $organization->description = $request['description'];
+        $organization->code = $request['code'];
+        $organization->leaderboard_duration = $request['duration'];
+        $organization->leaderboard_period = 1;
+        $organization->leaderboard_start = $leaderboardStart;
+        $organization->leaderboard_end = $leaderboardEnd;
         $organization->save();
 
         if ($request["profile_pic"] != "") {
@@ -183,6 +198,30 @@ class OrganizationController extends Controller
         $user["role"] = $userOrganization["role"];
 
         return new UserListResource($user);
+    }
+
+    public function getLeaderboard(Request $request)
+    {
+        $request->validate([
+            'organization_id' => 'required|integer'
+        ]); 
+
+        $leaderboard = User::join('user_organization', 'users.id', '=', 'user_organization.user_id')
+                            ->select('users.*', 'user_organization.points_get')
+                            ->where('user_organization.organization_id', $request['organization_id'])
+                            ->orderBy('user_organization.points_get', 'DESC')->get();
+
+        foreach ($leaderboard as $user) {
+            $level = Level::select('id', 'name','level','badge_url')->where('id', $user->level_id)->first();
+            $user['level'] = $level;
+        }
+        
+        return LeaderboardResource::collection($leaderboard);
+    }
+
+    public function resetLeaderboard()
+    {
+        $currDate = date("Y-m-d");
     }
 
     function generateRandomString($length = 30) {
