@@ -7,6 +7,7 @@ use App\Http\Resources\AttachmentResource;
 use App\Http\Resources\MeetingDetailResource;
 use App\Http\Resources\MeetingResource;
 use App\Http\Resources\UserListResource;
+use App\Models\Achievement;
 use App\Models\Agenda;
 use App\Models\Attachment;
 use App\Models\Level;
@@ -15,6 +16,7 @@ use App\Models\MeetingPoint;
 use App\Models\Organization;
 use App\Models\Suggestion;
 use App\Models\User;
+use App\Models\UserAchievement;
 use App\Models\UserMeeting;
 use App\Models\UserOrganization;
 use Exception;
@@ -81,6 +83,9 @@ class MeetingController extends Controller
                 $userMeeting->save();
             }
         }
+
+        $arrAchievementId = [13, 14, 15];
+        GamificationController::updateAchievement($user->id, $arrAchievementId);
 
         return MeetingResource::collection([$meeting]);
     }
@@ -242,6 +247,9 @@ class MeetingController extends Controller
             $meetingPoint->meeting_id = $meeting->id;
             $meetingPoint->point = 2;
             $meetingPoint->save();
+
+            $arrAchievementId = [7, 8, 9];
+            GamificationController::updateAchievement($user->id, $arrAchievementId);
         } elseif ($date > $meetDate + 900){
             $meetingPoint = new MeetingPoint();
             $meetingPoint->user_id = $user->id;
@@ -253,6 +261,9 @@ class MeetingController extends Controller
         UserMeeting::where('meeting_id', $meeting->id)
                 ->where('user_id', $user->id)
                 ->update(['status' => 1]);
+
+        $arrAchievementId = [1, 2, 3];
+        GamificationController::updateAchievement($user->id, $arrAchievementId);
 
         return $this->show($request);
     }
@@ -286,6 +297,9 @@ class MeetingController extends Controller
             $meetingPoint->meeting_id = $meeting->id;
             $meetingPoint->point = 2;
             $meetingPoint->save();
+            
+            $arrAchievementId = [16, 17, 18];
+            GamificationController::updateAchievement($user->id, $arrAchievementId);
         } elseif ($date > $meetDate + 900) {
             $meetingPoint = new MeetingPoint();
             $meetingPoint->user_id = $user->id;
@@ -300,6 +314,9 @@ class MeetingController extends Controller
         UserMeeting::where('meeting_id', $meeting->id)
                 ->where('user_id', $user->id)
                 ->update(['status' => 1]);
+
+        $arrAchievementId = [1, 2, 3];
+        GamificationController::updateAchievement($user->id, $arrAchievementId);
 
         return $this->show($request);
     }
@@ -333,6 +350,9 @@ class MeetingController extends Controller
             $meetingPoint->meeting_id = $meeting->id;
             $meetingPoint->point = 2;
             $meetingPoint->save();
+            
+            $arrAchievementId = [19, 20, 21];
+            GamificationController::updateAchievement($user->id, $arrAchievementId);
         } else {
             $meetingPoint = new MeetingPoint();
             $meetingPoint->user_id = $user->id;
@@ -365,21 +385,7 @@ class MeetingController extends Controller
                             ->sum('point');
 
             if ($userPoint > 0) {
-                $currUser = User::where('id', $userMeeting->user_id)->first();
-                $currUser->loadMissing('level');
-
-                $isLevelUp = false;
-                if ($currUser->exp + $userPoint > $currUser->level->max_exp) {
-                    $isLevelUp = true;
-                }
-
-                $updateValue = ['exp' => $currUser->exp + $userPoint];
-                if ($isLevelUp && $currUser->level->level < 6) {
-                    $nextLevel = $currUser->level->level + 1;
-                    $level = Level::where('level', $nextLevel)->first();
-                    $updateValue[] = ['level_id', $level->id];
-                }
-                User::where('id', $userMeeting->user_id)->update($updateValue);
+                GamificationController::addExp($userMeeting->user_id, $userPoint);
                 
                 $userOrganization = UserOrganization::where('user_id', $userMeeting->id)
                     ->where('organization_id', $meeting->organization_id)->first();

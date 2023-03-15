@@ -21,7 +21,8 @@ class UserResource extends JsonResource
             'exp' => $this->exp,
             'profile_pic' => $this->profile_pic,
             'level_id' => $this->level_id,
-            'level' => $this->whenLoaded('level')
+            'level' => $this->whenLoaded('level'),
+            'achievement' => $this->achievement
         ];
     }
 }

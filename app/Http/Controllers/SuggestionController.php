@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SuggestionResource;
+use App\Models\Achievement;
 use App\Models\Agenda;
 use App\Models\MeetingPoint;
 use App\Models\Suggestion;
 use App\Models\User;
+use App\Models\UserAchievement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -51,6 +53,9 @@ class SuggestionController extends Controller
         $meetingPoint->meeting_id = $agenda->meeting_id;
         $meetingPoint->point = 1;
         $meetingPoint->save();
+
+        $arrAchievementId = [4, 5, 6];
+        GamificationController::updateAchievement($user->id, $arrAchievementId);
 
         return new SuggestionResource($suggestion);
     }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\OrganizationController;
@@ -36,6 +37,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/meeting/end', [MeetingController::class, 'endMeeting']);
 
     Route::post('/meeting/attachment', [MeetingController::class, 'uploadFile']);
+    Route::get('/meeting/minutes', [MeetingController::class, 'getMinutes']);
 
     Route::post('/agenda', [AgendaController::class, 'store']);
     Route::put('/agenda', [AgendaController::class, 'update']);
@@ -45,7 +47,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/agenda/suggestion', [SuggestionController::class, 'store']);
     Route::put('/agenda/suggestion/accept', [SuggestionController::class, 'changeAcceptanceStatus']);
 
-    Route::get('/meeting/minutes', [MeetingController::class, 'getMinutes']);
+    Route::get('/profile', [UserController::class, 'getProfile']);
+    Route::get('/profile/achievements', [UserController::class, 'getUserAllAchievement']);
 });
 
 Route::post('/register', [UserController::class, 'register']);

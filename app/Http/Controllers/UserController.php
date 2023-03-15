@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserAuthResource;
 use App\Http\Resources\UserResource;
+use App\Models\Achievement;
+use App\Models\Level;
 use App\Models\User;
+use App\Models\UserAchievement;
 use App\Models\UserOrganization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -88,5 +91,45 @@ class UserController extends Controller
     public function logout(Request $request) {
         $request->user()->currentAccessToken()->delete();
         return response()->json(['status' => 'success']);
+    }
+
+    public function getProfile()
+    {
+        $authUser = Auth::user();
+        $user = User::find($authUser->id);
+        $user->loadMissing('level:id,name,level,badge_url,min_exp,max_exp');
+
+        $userAchievement = Achievement::join('user_achievement', 'achievements.id', '=', 'user_achievement.achievement_id')
+                ->select('achievements.*')
+                ->where('user_achievement.user_id', $user->id)
+                ->where('user_achievement.status', 1)
+                ->get();
+        
+        $user->achievement = $userAchievement;
+
+        return new UserResource($user);
+    }
+
+    public function getUserAllAchievement()
+    {
+        $user = Auth::user();
+        $achievements = Achievement::select('achievements.*')->get();
+
+        foreach($achievements as $achievement) {
+            $userAchievement = UserAchievement::select('progress', 'status')
+                ->where('user_id', $user->id)
+                ->where('achievement_id', $achievement->id)
+                ->first();
+
+            if ($userAchievement) {
+                $achievement->progress = $userAchievement->progress;
+                $achievement->status = $userAchievement->status;
+            } else {
+                $achievement->progress = 0;
+                $achievement->status = 0;
+            }
+        }
+
+        return response()->json(['data' => $achievements]);
     }
 }
