@@ -20,7 +20,8 @@ class User extends Authenticatable
         'password',
         'exp',
         'level_id',
-        'profile_pic'
+        'profile_pic',
+        'firebase_token'
     ];
 
     protected $hidden = [

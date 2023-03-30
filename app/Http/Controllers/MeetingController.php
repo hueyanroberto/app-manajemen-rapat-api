@@ -23,6 +23,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class MeetingController extends Controller
 {
@@ -86,6 +87,23 @@ class MeetingController extends Controller
 
         $arrAchievementId = [13, 14, 15];
         GamificationController::updateAchievement($user->id, $arrAchievementId);
+
+        $nUsers = User::join('user_meeting', 'users.id', '=', 'user_meeting.user_id')
+                    ->where('user_meeting.meeting_id', $meeting->id)->get();
+        $organization = Organization::find($meeting->organization_id);
+
+        $userTokens = array();
+        foreach ($nUsers as $nUser) {
+            $userTokens[] = $nUser->firebase_token;
+        }
+
+        $data = [
+            'type' => 6,
+            'title' => $meeting->title,
+            'organization' => $organization->name
+        ];
+
+        NotificationController::sendNotification($userTokens, $data);
 
         return MeetingResource::collection([$meeting]);
     }
@@ -318,6 +336,21 @@ class MeetingController extends Controller
         $arrAchievementId = [1, 2, 3];
         GamificationController::updateAchievement($user->id, $arrAchievementId);
 
+        $nUsers = User::join('user_meeting', 'users.id', '=', 'user_meeting.user_id')
+                    ->where('user_meeting.meeting_id', $meeting->id)->get();
+
+        $userTokens = array();
+        foreach ($nUsers as $nUser) {
+            $userTokens[] = $nUser->firebase_token;
+        }
+
+        $data = [
+            'type' => 2,
+            'title' => $meeting->title
+        ];
+
+        NotificationController::sendNotification($userTokens, $data);
+
         return $this->show($request);
     }
 
@@ -364,7 +397,8 @@ class MeetingController extends Controller
         Meeting::where('id', $meeting->id)
                 ->update(['status' => 2]);
 
-        $acceptedSuggestion = Suggestion::join('meetings', 'meetings.id', '=', 'suggestions.meeting_id')
+        $acceptedSuggestion = Suggestion::join('agendas', 'agendas.id', '=', 'suggestions.agenda_id')
+                ->join('meetings', 'meetings.id', '=', 'agendas.meeting_id')
                 ->select('suggestions.*')
                 ->where('suggestions.accepted', 1)
                 ->where('meetings.id', $meeting->id)
@@ -381,20 +415,32 @@ class MeetingController extends Controller
         $userMeetings = UserMeeting::where('meeting_id', $meeting->id)->get();
         foreach($userMeetings as $userMeeting) {
             $userPoint = DB::table('meeting_points')
-                            ->where('user_id'. $userMeeting->user_id)
+                            ->where('user_id', $userMeeting->user_id)
                             ->sum('point');
 
             if ($userPoint > 0) {
                 GamificationController::addExp($userMeeting->user_id, $userPoint);
                 
-                $userOrganization = UserOrganization::where('user_id', $userMeeting->id)
+                $userOrganization = UserOrganization::where('user_id', $userMeeting->user_id)
                     ->where('organization_id', $meeting->organization_id)->first();
                 $pointsGet = $userOrganization->points_get + $userPoint;
                 $userOrganization->update(['points_get', $pointsGet]);
-                //send notif
+                
+                $data = [
+                    'type' => 3,
+                    'exp' => $userPoint,
+                    'title' => $meeting->title
+                ];
             } else {
-                //send notif
+                $data = [
+                    'type' => 3,
+                    'exp' => 0,
+                    'title' => $meeting->title
+                ];
             }
+
+            $currUser = User::find($userMeeting->user_id);
+            NotificationController::sendNotification([$currUser->firebase_token], $data);
         }
 
         return $this->show($request);
@@ -452,6 +498,50 @@ class MeetingController extends Controller
         }
         
         return AttachmentResource::collection($attachments);
+    }
+
+    public function sendReminder1Day()
+    {
+        date_default_timezone_set("Asia/Jakarta");
+        $meetings = Meeting::whereRaw('DATE(start_time) - INTERVAL 1 DAY = DATE()')->get();
+        foreach ($meetings as $meeting) {
+            $users = User::join('user_meeting', 'users.id', '=', 'user_meeting.user_id')
+                ->where('user_meeting.meeting_id', $meeting->id)->get();
+            $userToken = array();
+            foreach ($users as $user) {
+                $userToken[] = $user->firebase_token;
+            }
+            $data = [
+                'type' => 1,
+                'start_time' => $meeting->start_time,
+                'end_time' => $meeting->end_time,
+                'days_left' => 1,
+                'title' => $meeting->title
+            ];
+            NotificationController::sendNotification($userToken, $data);
+        }
+    }
+
+    public function sendReminder2Day()
+    {
+        date_default_timezone_set("Asia/Jakarta");
+        $meetings = Meeting::whereRaw('DATE(start_time) - INTERVAL 2 DAY = DATE()')->get();
+        foreach ($meetings as $meeting) {
+            $users = User::join('user_meeting', 'users.id', '=', 'user_meeting.user_id')
+                ->where('user_meeting.meeting_id', $meeting->id)->get();
+            $userToken = array();
+            foreach ($users as $user) {
+                $userToken[] = $user->firebase_token;
+            }
+            $data = [
+                'type' => 1,
+                'start_time' => date("c", strtotime($meeting->start_time)),
+                'end_time' => date("c", strtotime($meeting->end_time)),
+                'days_left' => 2,
+                'title' => $meeting->title
+            ];
+            NotificationController::sendNotification($userToken, $data);
+        }
     }
 
     function generateRandomString($length = 30) {

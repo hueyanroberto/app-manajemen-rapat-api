@@ -3,8 +3,10 @@
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\SuggestionController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
 use App\Models\Meeting;
 use Illuminate\Http\Request;
@@ -13,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [UserController::class, 'logout']);
     Route::put('/register', [UserController::class, 'updateName']);
+    Route::put('/user/token', [UserController::class, 'insertFirebaseToken']);
 
     Route::get('/organization', [OrganizationController::class, 'index']);
     Route::put('/organization', [OrganizationController::class, 'update']);
@@ -39,6 +42,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/meeting/attachment', [MeetingController::class, 'uploadFile']);
     Route::get('/meeting/minutes', [MeetingController::class, 'getMinutes']);
 
+    Route::get('/meeting/task/{meetingId}', [TaskController::class, 'index']);
+    Route::post('/meeting/task', [TaskController::class, 'store']);
+
     Route::post('/agenda', [AgendaController::class, 'store']);
     Route::put('/agenda', [AgendaController::class, 'update']);
     Route::delete('/agenda', [AgendaController::class, 'delete']);
@@ -48,8 +54,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/agenda/suggestion/accept', [SuggestionController::class, 'changeAcceptanceStatus']);
 
     Route::get('/profile', [UserController::class, 'getProfile']);
-    Route::get('/profile/achievements', [UserController::class, 'getUserAllAchievement']);
+    Route::get('/profile/{userId}', [UserController::class, 'getOtherProfile']);
+    Route::get('/user/achievements', [UserController::class, 'getUserAllAchievement']);
 });
 
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
+
+Route::post('/sendNotif', [NotificationController::class, 'sendNotif']);

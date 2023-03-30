@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\LeaderboardResource;
 use App\Http\Resources\OrganizationResource;
 use App\Http\Resources\UserListResource;
+use App\Models\LeaderboardHistory;
 use App\Models\Level;
 use App\Models\Organization;
 use App\Models\User;
@@ -124,11 +125,12 @@ class OrganizationController extends Controller
         $request->validate([
             'organization_id' => 'required|integer',
             'name' => 'required|min:2|max:45',
-            'description' => 'required'
+            'description' => 'required',
+            'leaderboard_duration' => 'required|integer'
         ]); 
 
         $organization = Organization::findOrFail($request['organization_id']);
-        $organization->update($request->only(['name', 'description']));
+        $organization->update($request->except(['organization_id']));
 
         return OrganizationResource::collection([$organization]);
     }
@@ -202,13 +204,16 @@ class OrganizationController extends Controller
 
     public function getLeaderboard(Request $request)
     {
+        date_default_timezone_set("Asia/Jakarta");
         $request->validate([
             'organization_id' => 'required|integer'
         ]); 
 
+        $organization = Organization::findOrFail($request['organization_id']);
+
         $leaderboard = User::join('user_organization', 'users.id', '=', 'user_organization.user_id')
                             ->select('users.*', 'user_organization.points_get')
-                            ->where('user_organization.organization_id', $request['organization_id'])
+                            ->where('user_organization.organization_id', $organization->id)
                             ->orderBy('user_organization.points_get', 'DESC')->get();
 
         foreach ($leaderboard as $user) {
@@ -216,12 +221,47 @@ class OrganizationController extends Controller
             $user['level'] = $level;
         }
         
-        return LeaderboardResource::collection($leaderboard);
+        return response()->json([
+            'data' => [
+                'start_date' => date("c", strtotime($organization->leaderboard_start)), 
+                'end_date' => date("c", strtotime($organization->leaderboard_end)), 
+                'duration' => $organization->leaderboard_duration,
+                'period' => $organization->leaderboard_period,
+                'leaderboard' => LeaderboardResource::collection($leaderboard)
+            ]
+        ]);
     }
 
     public function resetLeaderboard()
     {
+        date_default_timezone_set("Asia/Jakarta");
         $currDate = date("Y-m-d");
+        $organizations = Organization::where('end_date', '<', $currDate)->get();
+
+        foreach ($organizations as $organization) {
+            $duration = $organization->leaderboard_duration;
+            $period = $organization->leaderbod_period;
+
+            $userOrganizations = UserOrganization::where('organization_id', $organization->id)->get();
+            foreach ($userOrganizations as $userOrganization) {
+                $leaderboardHistory = new LeaderboardHistory();
+                $leaderboardHistory->user_id = $userOrganization->user_id;
+                $leaderboardHistory->organization_id = $userOrganization->organization_id;
+                $leaderboardHistory->period = $period;
+                $leaderboardHistory->point = $userOrganization->points_get;
+                $leaderboardHistory->save();
+
+                $userOrganization->update(['points_get' => 0]);
+
+                //TODO sendNotif
+            }
+
+            $leaderboardStart = date("Y-m-d");
+            $currTime = strtotime($leaderboardStart);
+            $leaderboardEnd = date("Y-m-d", strtotime("+". $duration ." month", $currTime));
+
+            $organization->update(['leaderboard_start' => $leaderboardStart, 'leaderboard_end' => $leaderboardEnd, 'leaderboard_period' => $period + 1]);
+        }
     }
 
     function generateRandomString($length = 30) {

@@ -64,6 +64,11 @@ class UserController extends Controller
         return new UserAuthResource($user);
     }
 
+    public function loginGoogle(Request $request)
+    {
+        # code...
+    }
+
     public function updateName(Request $request) {
 
         $request->validate([
@@ -88,7 +93,22 @@ class UserController extends Controller
         return new UserResource($userGet->loadMissing('level:id,name,level,badge_url'));
     }
 
+    public function insertFirebaseToken(Request $request)
+    {
+        $request->validate([
+            'firebase_token' => 'required'
+        ]);
+
+        $userAuth = Auth::user();
+        $user = User::findOrFail($userAuth->id);
+        $user->update($request->all());
+    }
+
     public function logout(Request $request) {
+        $userAuth = Auth::user();
+        $user = User::findOrFail($userAuth->id);
+        $user->update(['firebase_token' => null]);
+
         $request->user()->currentAccessToken()->delete();
         return response()->json(['status' => 'success']);
     }
@@ -97,6 +117,22 @@ class UserController extends Controller
     {
         $authUser = Auth::user();
         $user = User::find($authUser->id);
+        $user->loadMissing('level:id,name,level,badge_url,min_exp,max_exp');
+
+        $userAchievement = Achievement::join('user_achievement', 'achievements.id', '=', 'user_achievement.achievement_id')
+                ->select('achievements.*')
+                ->where('user_achievement.user_id', $user->id)
+                ->where('user_achievement.status', 1)
+                ->get();
+        
+        $user->achievement = $userAchievement;
+
+        return new UserResource($user);
+    }
+
+    public function getOtherProfile($userId)
+    {
+        $user = User::find($userId);
         $user->loadMissing('level:id,name,level,badge_url,min_exp,max_exp');
 
         $userAchievement = Achievement::join('user_achievement', 'achievements.id', '=', 'user_achievement.achievement_id')

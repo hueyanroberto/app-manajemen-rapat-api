@@ -23,6 +23,8 @@ class OrganizationResource extends JsonResource
             'profile_pic' => $this->profile_pic ? $this->profile_pic : "",
             'leaderboard_start' => date("c", strtotime($this->leaderboard_start)),
             'leaderboard_end' => date("c", strtotime($this->leaderboard_end)),
+            'leaderboard_period' => $this->leaderboard_period,
+            'leaderboard_duration' => $this->leaderboard_duration,
             'role' => $this->role
         ];
     }

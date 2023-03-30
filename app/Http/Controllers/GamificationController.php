@@ -23,7 +23,14 @@ class GamificationController extends Controller
                     if ($newProgress >= $achievement->milestone) {
                         $userAchievement->update(['progress' => $newProgress, 'status' => 1]);
                         self::addExp($userId, $achievement->reward_exp);
-                        //sendNotif()
+                        
+                        $user = User::find($userId);
+                        $data = [
+                            'type' => 4,
+                            'title' => $achievement->name,
+                            'exp' => $achievement->reward_exp
+                        ];
+                        NotificationController::sendNotification([$user->firebase_token], $data);
                     } else {
                         $userAchievement->update(['progress' => $newProgress]);
                     }
@@ -54,7 +61,12 @@ class GamificationController extends Controller
             $level = Level::where('level', $nextLevel)->first();
             $updateValue[] = ['level_id', $level->id];
 
-            //kirim notif
+            $user = User::find($userId);
+            $data = [
+                'type' => 5,
+                'level' => $level->name
+            ];
+            NotificationController::sendNotification([$user->firebase_token], $data);
         }
         User::where('id', $userId)->update($updateValue);
     }

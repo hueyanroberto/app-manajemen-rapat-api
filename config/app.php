@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Facade;
 
 return [
+    'firebase_notification_key' => env('FIREBASE_NOTIFICATION_KEY', ''),
 
     /*
     |--------------------------------------------------------------------------
