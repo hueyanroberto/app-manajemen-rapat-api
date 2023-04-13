@@ -211,15 +211,17 @@ class MeetingController extends Controller
                 ->where('meeting_id', $meeting->id)->get();
             
             $participants = User::join('user_meeting', 'users.id', '=', 'user_meeting.user_id')
-                ->select('users.id', 'users.email', 'users.name', 'users.profile_pic', 'user_meeting.status')
+                ->select('users.id', 'users.email', 'users.name', 'users.profile_pic', 'users.level_id', 'user_meeting.status')
                 ->where('user_meeting.meeting_id', $meeting->id)
                 ->orderBy('users.name', 'ASC')->get();
 
             foreach($participants as $participant) {
-                $userOrganization = UserOrganization::where('user_id', $participant->id)
-                    ->where('organization_id', $meeting->organization_id)->first();
-                $userOrganization->loadMissing('role:id,name');
-                $participant['role'] = $userOrganization['role']->name;
+                // $userOrganization = UserOrganization::where('user_id', $participant->id)
+                //     ->where('organization_id', $meeting->organization_id)->first();
+                // $userOrganization->loadMissing('role:id,name');
+                $currUserMeeting = UserMeeting::where('meeting_id', $meeting->id)
+                    ->where('user_id', $participant->id)->first();
+                $participant['role'] = $currUserMeeting->role;
             }
 
             $attachments = Attachment::where('meeting_id', $meeting->id)
@@ -313,7 +315,7 @@ class MeetingController extends Controller
             $meetingPoint = new MeetingPoint();
             $meetingPoint->user_id = $user->id;
             $meetingPoint->meeting_id = $meeting->id;
-            $meetingPoint->point = 2;
+            $meetingPoint->point = 1;
             $meetingPoint->save();
             
             $arrAchievementId = [16, 17, 18];
@@ -322,7 +324,7 @@ class MeetingController extends Controller
             $meetingPoint = new MeetingPoint();
             $meetingPoint->user_id = $user->id;
             $meetingPoint->meeting_id = $meeting->id;
-            $meetingPoint->point = -2;
+            $meetingPoint->point = -1;
             $meetingPoint->save();
         }
         
@@ -381,7 +383,7 @@ class MeetingController extends Controller
             $meetingPoint = new MeetingPoint();
             $meetingPoint->user_id = $user->id;
             $meetingPoint->meeting_id = $meeting->id;
-            $meetingPoint->point = 2;
+            $meetingPoint->point = 1;
             $meetingPoint->save();
             
             $arrAchievementId = [19, 20, 21];
@@ -390,7 +392,7 @@ class MeetingController extends Controller
             $meetingPoint = new MeetingPoint();
             $meetingPoint->user_id = $user->id;
             $meetingPoint->meeting_id = $meeting->id;
-            $meetingPoint->point = -2;
+            $meetingPoint->point = -1;
             $meetingPoint->save();
         }
 

@@ -66,7 +66,33 @@ class UserController extends Controller
 
     public function loginGoogle(Request $request)
     {
-        # code...
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if ($user) {
+            $user->loadMissing('level:id,name,level,badge_url');
+            $user["token"] = $user->createToken('user login')->plainTextToken;
+            $user["status"] = 1;
+            return new UserAuthResource($user);
+        } else {
+            $user = new User();
+            $user->email = $request["email"];
+            $user->password = Hash::make($this->generateRandomString(12));
+            $user->exp = 0;
+            $user->level_id = 1;
+            $user->name = "";
+            $user->profile_pic = "";
+            $user->save();
+
+            $user->loadMissing('level:id,name,level,badge_url');
+            $user->token = $user->createToken('user login')->plainTextToken;
+            $user->status = 0;
+
+            return new UserAuthResource($user);
+        }
     }
 
     public function updateName(Request $request) {
@@ -130,6 +156,33 @@ class UserController extends Controller
         return new UserResource($user);
     }
 
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'name' => 'required'
+        ]);
+
+        $userAuth = Auth::user();
+        $user = User::findOrFail($userAuth->id);
+        $user->update(['name', $request['name']]);
+        $user->achievement = [];
+
+        return new UserResource($user->loadMissing('level:id,name,level,badge_url'));
+    }
+
+    public function updateProfilePic(Request $request)
+    {
+        $request->validate([
+            'profile_pic' => 'required'
+        ]);
+
+        $user = Auth::user();
+
+        $image = base64_decode($request["profile_pic"]);
+        $filename = "user-" . $user->id . ".jpg";
+        file_put_contents('Asset/Profile/User/'.$filename, $image);
+    }
+
     public function getOtherProfile($userId)
     {
         $user = User::find($userId);
@@ -167,5 +220,15 @@ class UserController extends Controller
         }
 
         return response()->json(['data' => $achievements]);
+    }
+
+    function generateRandomString($length = 30) {
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $charactersLength = strlen($characters);
+        $randomString = '';
+        for ($i = 0; $i < $length; $i++) {
+            $randomString .= $characters[random_int(0, $charactersLength - 1)];
+        }
+        return $randomString;
     }
 }

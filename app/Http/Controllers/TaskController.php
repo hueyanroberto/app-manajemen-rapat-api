@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TaskResource;
+use App\Models\Meeting;
+use App\Models\Organization;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\UserMeeting;
 use App\Models\UserOrganization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -50,17 +53,70 @@ class TaskController extends Controller
         return TaskResource::collection($tasks);
     }
 
-    public function updateStatus($taskId)
+    public function show($taskId)
     {
+        $task = Task::findOrFail($taskId);
+        $user = User::find($task->assigned_to);
+        $task->user = $user->name;
+        
+        return new TaskResource($task);
+    }
+
+    public function updateStatus($taskId, Request $request)
+    {
+        $request->validate([
+            'date' => 'required'
+        ]);
+
         $task = Task::find($taskId);
 
         $user = Auth::user();
-        $userOrganization = UserOrganization::where('meeting_id', $task->meeting_id)->where('user_id', $user->id)->first();
-        if ($userOrganization->role != 1) {
+        $UserMeeting = UserMeeting::where('meeting_id', $task->meeting_id)->where('user_id', $user->id)->first();
+        
+        if ($UserMeeting->role != 1) {
             return response()->json(['status' => 'unauthorized', 'data' => null]);
         }
+    
+        date_default_timezone_set("Asia/Jakarta");
+        $date = strtotime($request['date']);
+        $deadline = strtotime($task->deadline);
 
-        $task->update(['status'=> 1]);
+        $isBeforeDeadline = false;
+        if ($date <= $deadline) {
+            $organization = Organization::join('meetings', 'organization.id', '=', 'meetings.organization_id')
+                ->where('meetings.id', $UserMeeting->meeting_id)->first();
+            $userOrganization = UserOrganization::where('user_id', $task->assigned_to)
+                ->where('organization_id', $organization->id)->first();
+
+            $orgPoint = $userOrganization->points_get + 2;
+            $userOrganization->update(['points_get' => $orgPoint]);
+            
+            GamificationController::addExp($task->assigned_to, 2);
+            $isBeforeDeadline = true;
+        }
+
+        if ($task->status == 1) {
+            $task->update(['status'=> 0]);
+        } else {
+            $task->update(['status'=> 1]);
+        }
+
+        $user = User::find($task->assigned_to);
+        $task->user = $user->name;
+
+        $data = [
+            'type' => 7,
+            'title' => $task->title
+        ];
+
+        if ($isBeforeDeadline) {
+            $data["exp"] = 2;
+            $data['status'] = 1;
+        } else {
+            $data['status'] = 0;
+        }
+
+        NotificationController::sendNotification([$user->firebase_token], $data);
         
         return new TaskResource($task);
     }

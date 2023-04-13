@@ -44,6 +44,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/meeting/task/{meetingId}', [TaskController::class, 'index']);
     Route::post('/meeting/task', [TaskController::class, 'store']);
+    Route::patch('/meeting/task/{taskId}', [TaskController::class, 'updateStatus']);
 
     Route::post('/agenda', [AgendaController::class, 'store']);
     Route::put('/agenda', [AgendaController::class, 'update']);
@@ -56,9 +57,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/profile', [UserController::class, 'getProfile']);
     Route::get('/profile/{userId}', [UserController::class, 'getOtherProfile']);
     Route::get('/user/achievements', [UserController::class, 'getUserAllAchievement']);
+    Route::patch('/profile', [UserController::class, 'updateProfile']);
 });
 
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
+Route::post('/login/google', [UserController::class, 'loginGoogle']);
 
 Route::post('/sendNotif', [NotificationController::class, 'sendNotif']);

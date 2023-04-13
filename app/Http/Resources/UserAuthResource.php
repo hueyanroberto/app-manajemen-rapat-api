@@ -22,7 +22,8 @@ class UserAuthResource extends JsonResource
             'level_id' => $this->level_id,
             'token' => $this->token,
             'profile_pic' => $this->profile_pic,
-            'level' => $this->whenLoaded('level')
+            'level' => $this->whenLoaded('level'),
+            'status' => $this->status
         ];
     }
 }
