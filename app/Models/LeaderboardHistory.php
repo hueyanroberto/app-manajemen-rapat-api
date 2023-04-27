@@ -9,6 +9,7 @@ class LeaderboardHistory extends Model
 {
     use HasFactory;
 
+    public $timestamps = false;
     protected $table = "leaderboard_histories";
     protected $fillable = ['user_id', 'organization_id', 'period', 'point'];
 }

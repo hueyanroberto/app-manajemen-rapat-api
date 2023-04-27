@@ -232,6 +232,35 @@ class OrganizationController extends Controller
         ]);
     }
 
+    public function getLeaderboardHistory(Request $request, $organizationId)
+    {
+        date_default_timezone_set("Asia/Jakarta");
+
+        $request->validate([
+            'period' => 'required|integer'
+        ]);
+
+        $organization = Organization::findOrFail($organizationId);
+
+        $leaderboard = User::join('leaderboard_histories', 'users.id', '=', 'leaderboard_histories.user_id')
+                            ->select('users.*', 'leaderboard_histories.point')
+                            ->where('leaderboard_histories.organization_id', $organization->id)
+                            ->where('leaderboard_histories.period', $request['period'])
+                            ->orderBy('leaderboard_histories.point', 'DESC')->get();
+
+        foreach ($leaderboard as $user) {
+            $level = Level::select('id', 'name','level','badge_url')->where('id', $user->level_id)->first();
+            $user['level'] = $level;
+        }
+        
+        return response()->json([
+            'data' => [
+                'period' => $request['period'],
+                'leaderboard' => LeaderboardResource::collection($leaderboard)
+            ]
+        ]);
+    }
+
     public function resetLeaderboard()
     {
         date_default_timezone_set("Asia/Jakarta");
@@ -240,7 +269,7 @@ class OrganizationController extends Controller
 
         foreach ($organizations as $organization) {
             $duration = $organization->leaderboard_duration;
-            $period = $organization->leaderbod_period;
+            $period = $organization->leaderboard_period;
 
             $userOrganizations = UserOrganization::where('organization_id', $organization->id)->get();
             foreach ($userOrganizations as $userOrganization) {
@@ -262,6 +291,34 @@ class OrganizationController extends Controller
 
             $organization->update(['leaderboard_start' => $leaderboardStart, 'leaderboard_end' => $leaderboardEnd, 'leaderboard_period' => $period + 1]);
         }
+    }
+
+    public function resetLeaderboard2()
+    {
+        $organization = Organization::findOrFail(12);
+
+        $duration = $organization->leaderboard_duration;
+        $period = $organization->leaderboard_period;
+
+        $userOrganizations = UserOrganization::where('organization_id', $organization->id)->get();
+        foreach ($userOrganizations as $userOrganization) {
+            $leaderboardHistory = new LeaderboardHistory();
+            $leaderboardHistory->user_id = $userOrganization->user_id;
+            $leaderboardHistory->organization_id = $userOrganization->organization_id;
+            $leaderboardHistory->period = $period;
+            $leaderboardHistory->point = $userOrganization->points_get;
+            $leaderboardHistory->save();
+
+            $userOrganization->update(['points_get' => 0]);
+
+            //TODO sendNotif
+        }
+
+        $leaderboardStart = date("Y-m-d");
+        $currTime = strtotime($leaderboardStart);
+        $leaderboardEnd = date("Y-m-d", strtotime("+". $duration ." month", $currTime));
+
+        $organization->update(['leaderboard_start' => $leaderboardStart, 'leaderboard_end' => $leaderboardEnd, 'leaderboard_period' => $period + 1]);
     }
 
     function generateRandomString($length = 30) {

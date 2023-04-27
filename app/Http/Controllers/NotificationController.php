@@ -46,7 +46,7 @@ class NotificationController extends Controller
         $message = [
             'notification' => $notification, 
             'registration_ids' => [
-                ''
+                'f8SM4AnuRjiTBR1SjX3GYN:APA91bGxTxTvnPC-wTsAr1tWq0wz97T9bJ02WXP2kNmGs3uPnZoSa5E9sYNDUDVrMSdU60TK81sYMkvFu5xEEgK17rg5smrfYdl8dGCR0ua77UHYg1DFlJf_vs8J0_HmQVuImlU80upP'
             ],
             'data' => [
                 'type' => 1,

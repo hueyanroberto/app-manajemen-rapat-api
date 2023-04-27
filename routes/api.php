@@ -28,6 +28,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             ->middleware('ensure-user-is-in-organization');
     Route::put('/organization/role', [OrganizationController::class, 'changeRole']);
     Route::get('/organization/leaderboard', [OrganizationController::class, 'getLeaderboard']);
+    Route::get('/organization/leaderboard/history/{organizationId}', [OrganizationController::class, 'getLeaderboardHistory']);
 
 
     Route::get('/meeting/create/member', [MeetingController::class, 'chooseMember']);
@@ -65,3 +66,4 @@ Route::post('/login', [UserController::class, 'login']);
 Route::post('/login/google', [UserController::class, 'loginGoogle']);
 
 Route::post('/sendNotif', [NotificationController::class, 'sendNotif']);
+Route::post('/resetLeaderboard', [OrganizationController::class, 'resetLeaderboard2']);
