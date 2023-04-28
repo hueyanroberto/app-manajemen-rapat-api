@@ -59,6 +59,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/profile/{userId}', [UserController::class, 'getOtherProfile']);
     Route::get('/user/achievements', [UserController::class, 'getUserAllAchievement']);
     Route::patch('/profile', [UserController::class, 'updateProfile']);
+    Route::put('/profile/profilePic', [UserController::class, 'updateProfilePic']);
 });
 
 Route::post('/register', [UserController::class, 'register']);
