@@ -265,7 +265,7 @@ class OrganizationController extends Controller
     {
         date_default_timezone_set("Asia/Jakarta");
         $currDate = date("Y-m-d");
-        $organizations = Organization::where('end_date', '<', $currDate)->get();
+        $organizations = Organization::where('leaderboard_end', '<', $currDate)->get();
 
         foreach ($organizations as $organization) {
             $duration = $organization->leaderboard_duration;

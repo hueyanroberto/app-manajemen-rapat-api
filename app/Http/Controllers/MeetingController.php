@@ -24,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class MeetingController extends Controller
 {
@@ -412,6 +413,9 @@ class MeetingController extends Controller
             $meetingPoint->meeting_id = $meeting->id;
             $meetingPoint->point = 2;
             $meetingPoint->save();
+
+            $arrAchievementIdAccSugestion = [10, 21, 22];
+            GamificationController::updateAchievement($suggestion->user_id, $arrAchievementIdAccSugestion);
         }
                 
         $userMeetings = UserMeeting::where('meeting_id', $meeting->id)->get();
@@ -488,13 +492,16 @@ class MeetingController extends Controller
             $filenameWithExtension = $file->getClientOriginalName();
             $filenameWithoutExtension = pathinfo($filenameWithExtension, PATHINFO_FILENAME);
             $extension = $file->getClientOriginalExtension();
-            $filename = $filenameWithoutExtension . '_' . time() . '.' . $extension;
+            $filename = $filenameWithoutExtension . '.' . $extension;
             $file->move('Asset/File/'.$meeting->id, $filename);
 
-            $attachment = new Attachment();
-            $attachment->meeting_id = $request['meeting_id'];
-            $attachment->url = $filename;
-            $attachment->save();
+            $attachment = Attachment::where('meeting_id', $request['meeting_id'])->where('url', $filename)->first();
+            if (!$attachment) {
+                $attachment = new Attachment();
+                $attachment->meeting_id = $request['meeting_id'];
+                $attachment->url = $filename;
+                $attachment->save();
+            } 
 
             $attachments[] = $attachment;
         }

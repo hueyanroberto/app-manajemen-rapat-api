@@ -67,4 +67,4 @@ Route::post('/login', [UserController::class, 'login']);
 Route::post('/login/google', [UserController::class, 'loginGoogle']);
 
 Route::post('/sendNotif', [NotificationController::class, 'sendNotif']);
-Route::post('/resetLeaderboard', [OrganizationController::class, 'resetLeaderboard2']);
+// Route::post('/resetLeaderboard', [OrganizationController::class, 'resetLeaderboard']);

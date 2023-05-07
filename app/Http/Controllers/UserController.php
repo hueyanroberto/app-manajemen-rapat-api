@@ -164,7 +164,7 @@ class UserController extends Controller
 
         $userAuth = Auth::user();
         $user = User::findOrFail($userAuth->id);
-        $user->update(['name', $request['name']]);
+        $user->update($request->all());
         $user->achievement = [];
 
         return new UserResource($user->loadMissing('level:id,name,level,badge_url'));
@@ -183,7 +183,7 @@ class UserController extends Controller
         $image = base64_decode($request["profile_pic"]);
         $filename = "user-" . $user->id . ".jpg";
         file_put_contents('Asset/Profile/User/'.$filename, $image);
-        
+
         return new UserResource($user->loadMissing('level:id,name,level,badge_url'));
     }
 
