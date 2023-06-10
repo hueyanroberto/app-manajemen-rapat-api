@@ -14,7 +14,7 @@ class ResetLeaderboardCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'command:name';
+    protected $signature = 'command:resetLeaderboard';
 
     /**
      * The console command description.

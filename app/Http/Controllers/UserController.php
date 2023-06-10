@@ -178,12 +178,14 @@ class UserController extends Controller
 
         $userAuth = Auth::user();
         $user = User::findOrFail($userAuth->id);
-        $user->achievement = [];
 
         $image = base64_decode($request["profile_pic"]);
         $filename = "user-" . $user->id . ".jpg";
         file_put_contents('Asset/Profile/User/'.$filename, $image);
 
+        $user->update(['profile_pic' => $filename]);
+
+        $user->achievement = [];
         return new UserResource($user->loadMissing('level:id,name,level,badge_url'));
     }
 

@@ -17,10 +17,16 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command(ResetLeaderboardCommand::class, ['--force'])->daily();
-        $schedule->command(MeetingReminderCommand::class, ['--force'])
+        $schedule->command('command:resetLeaderboard')
+                 ->dailyAt('16:50')
+                 ->timezone('Asia/Jakarta');
+                 
+        $schedule->command('command:MeetingReminder')
                  ->dailyAt('07:00')
                  ->timezone('Asia/Jakarta');
+
+        $schedule->command('cron:log')
+                 ->everyMinute();
     }
 
     /**

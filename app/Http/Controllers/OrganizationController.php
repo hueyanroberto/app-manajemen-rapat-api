@@ -110,7 +110,10 @@ class OrganizationController extends Controller
     {
         $userAuth = Auth::user();
         $user = User::where('id', $userAuth->id)->first();
-        $organizations = $user->organizations;
+        // $organizations = $user->organizations;
+        $organizations = Organization::join('user_organization', 'organizations.id', '=', 'user_organization.organization_id')
+                ->where('user_organization.user_id', $user->id)
+                ->orderBy('organizations.id', 'DESC')->get();
         foreach ($organizations as $organization) {
             $userOrganization = UserOrganization::where('user_id', $user->id)->where('organization_id', $organization->id)->first();
             $userOrganization->loadMissing('role');

@@ -12,6 +12,7 @@ use App\Models\UserMeeting;
 use App\Models\UserOrganization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TaskController extends Controller
 {
@@ -83,15 +84,21 @@ class TaskController extends Controller
 
         $isBeforeDeadline = false;
         if ($date <= $deadline) {
-            $organization = Organization::join('meetings', 'organization.id', '=', 'meetings.organization_id')
-                ->where('meetings.id', $UserMeeting->meeting_id)->first();
+            $organization = Organization::join('meetings', 'organizations.id', '=', 'meetings.organization_id')
+                ->where('meetings.id', $UserMeeting->meeting_id)
+                ->select('organizations.*')->first();
             $userOrganization = UserOrganization::where('user_id', $task->assigned_to)
                 ->where('organization_id', $organization->id)->first();
 
             $orgPoint = $userOrganization->points_get + 2;
-            $userOrganization->update(['points_get' => $orgPoint]);
+            UserOrganization::where('user_id', $task->assigned_to)
+                ->where('organization_id', $organization->id)
+                ->update(['points_get' => $orgPoint]);
             
             GamificationController::addExp($task->assigned_to, 2);
+            
+            $arrAchievementId = [22, 23, 24];
+            GamificationController::updateAchievement($task->assigned_to, $arrAchievementId);
             $isBeforeDeadline = true;
         }
 

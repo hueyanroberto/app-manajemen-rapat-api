@@ -319,7 +319,7 @@ class MeetingController extends Controller
             $meetingPoint->point = 1;
             $meetingPoint->save();
             
-            $arrAchievementId = [16, 17, 18];
+            $arrAchievementId = [7, 8, 9, 16, 17, 18];
             GamificationController::updateAchievement($user->id, $arrAchievementId);
         } elseif ($date > $meetDate + 900) {
             $meetingPoint = new MeetingPoint();
@@ -353,6 +353,9 @@ class MeetingController extends Controller
         ];
 
         NotificationController::sendNotification($userTokens, $data);
+
+        $arrAchievementId = [1, 2, 3];
+        GamificationController::updateAchievement($user->id, $arrAchievementId);
 
         return $this->show($request);
     }
@@ -414,7 +417,7 @@ class MeetingController extends Controller
             $meetingPoint->point = 2;
             $meetingPoint->save();
 
-            $arrAchievementIdAccSugestion = [10, 21, 22];
+            $arrAchievementIdAccSugestion = [10, 11, 12];
             GamificationController::updateAchievement($suggestion->user_id, $arrAchievementIdAccSugestion);
         }
                 
@@ -422,6 +425,7 @@ class MeetingController extends Controller
         foreach($userMeetings as $userMeeting) {
             $userPoint = DB::table('meeting_points')
                             ->where('user_id', $userMeeting->user_id)
+                            ->where('meeting_id', $userMeeting->meeting_id)
                             ->sum('point');
 
             if ($userPoint > 0) {
@@ -430,7 +434,9 @@ class MeetingController extends Controller
                 $userOrganization = UserOrganization::where('user_id', $userMeeting->user_id)
                     ->where('organization_id', $meeting->organization_id)->first();
                 $pointsGet = $userOrganization->points_get + $userPoint;
-                $userOrganization->update(['points_get', $pointsGet]);
+                UserOrganization::where('user_id', $userMeeting->user_id)
+                    ->where('organization_id', $meeting->organization_id)
+                    ->update(['points_get' => $pointsGet]);
                 
                 $data = [
                     'type' => 3,
