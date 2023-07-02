@@ -48,14 +48,14 @@ class SuggestionController extends Controller
         $user = User::where('id', $suggestion->user_id)->first();
         $suggestion['user'] = $user->name;
 
-        $meetingPoint = new MeetingPoint();
-        $meetingPoint->user_id = $user->id;
-        $meetingPoint->meeting_id = $agenda->meeting_id;
-        $meetingPoint->point = 1;
-        $meetingPoint->save();
+        // $meetingPoint = new MeetingPoint();
+        // $meetingPoint->user_id = $user->id;
+        // $meetingPoint->meeting_id = $agenda->meeting_id;
+        // $meetingPoint->point = 1;
+        // $meetingPoint->save();
 
-        $arrAchievementId = [4, 5, 6];
-        GamificationController::updateAchievement($user->id, $arrAchievementId);
+        // $arrAchievementId = [4, 5, 6];
+        // GamificationController::updateAchievement($user->id, $arrAchievementId);
 
         return new SuggestionResource($suggestion);
     }
@@ -70,6 +70,20 @@ class SuggestionController extends Controller
         $acceptance = $suggestion->accepted == 0 ? 1 : 0;
         $suggestion->update(['accepted' => $acceptance]);
         
+        $user = User::where('id', $suggestion->user_id)->first();
+        $suggestion['user'] = $user->name;
+
+        return new SuggestionResource($suggestion);
+    }
+
+    public function delete(Request $request) {
+        $request->validate([
+            'suggestion_id' => 'required|integer'
+        ]);
+
+        $suggestion = Suggestion::findOrFail($request['suggestion_id']);
+        $suggestion->delete();
+
         $user = User::where('id', $suggestion->user_id)->first();
         $suggestion['user'] = $user->name;
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\AgendaResource;
 use App\Models\Agenda;
 use App\Models\Suggestion;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class AgendaController extends Controller
@@ -45,6 +46,15 @@ class AgendaController extends Controller
         return AgendaResource::collection($agenda);
     }
 
+    public function show(Request $request) {
+        $request->validate([
+            'meeting_id' => 'required|integer'
+        ]); 
+
+        $agenda = Agenda::findOrFail($request->agenda_id);
+        return AgendaResource::collection([$agenda]);
+    }
+
     public function update(Request $request)
     {
         $request->validate([
@@ -54,6 +64,26 @@ class AgendaController extends Controller
 
         $agenda = Agenda::findOrFail($request['agenda_id']);
         $agenda->update($request->only('task'));
+
+        return AgendaResource::collection([$agenda]);
+    }
+
+    public function updateStatus(Request $request) {
+        $request->validate([
+            'agenda_id' => 'required|integer'
+        ]);
+
+        $agenda = Agenda::findOrFail($request['agenda_id']);
+        $suggestions = Suggestion::where('agenda_id', $agenda->id)->get();
+        if ($suggestions->count() > 0) {
+            foreach ($suggestions as $suggestion) {
+                if ($suggestion->accepted == 1) {
+                    $agenda->update(['completed' => 1]);
+                    $agenda->completed = 1;
+                    break;
+                }
+            }
+        }
 
         return AgendaResource::collection([$agenda]);
     }

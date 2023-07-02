@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AttachmentResource;
 use App\Http\Resources\MeetingDetailResource;
+use App\Http\Resources\MeetingPointResource;
 use App\Http\Resources\MeetingResource;
 use App\Http\Resources\UserListResource;
 use App\Models\Achievement;
@@ -228,11 +229,17 @@ class MeetingController extends Controller
             $attachments = Attachment::where('meeting_id', $meeting->id)
                 ->select('id', 'meeting_id', 'url')->get();
 
+            $point = DB::table('meeting_points')
+                ->where('meeting_id', $meeting->id)
+                ->where('user_id', $user->id)
+                ->sum('point');
+
             $meeting['user_status'] = $userMeeting->status;
             $meeting['user_role'] = $userMeeting->role;
             $meeting['agendas'] = $agenda;
             $meeting['participants'] = $participants;
             $meeting['attachments'] = $attachments;
+            $meeting['point'] = $point;
 
             return new MeetingDetailResource($meeting);
         } catch (Exception $e) {
@@ -267,6 +274,7 @@ class MeetingController extends Controller
             $meetingPoint->user_id = $user->id;
             $meetingPoint->meeting_id = $meeting->id;
             $meetingPoint->point = 2;
+            $meetingPoint->description = "Menghadiri rapat tepat waktu||Attends meeting on time";
             $meetingPoint->save();
 
             $arrAchievementId = [7, 8, 9];
@@ -276,6 +284,7 @@ class MeetingController extends Controller
             $meetingPoint->user_id = $user->id;
             $meetingPoint->meeting_id = $meeting->id;
             $meetingPoint->point = -2;
+            $meetingPoint->description = "Terlambat menghadiri rapat||Attends meeting late";
             $meetingPoint->save();
         }
 
@@ -317,6 +326,7 @@ class MeetingController extends Controller
             $meetingPoint->user_id = $user->id;
             $meetingPoint->meeting_id = $meeting->id;
             $meetingPoint->point = 1;
+            $meetingPoint->description = "Memulai rapat tepat waktu||Start meeting on time";
             $meetingPoint->save();
             
             $arrAchievementId = [7, 8, 9, 16, 17, 18];
@@ -326,11 +336,15 @@ class MeetingController extends Controller
             $meetingPoint->user_id = $user->id;
             $meetingPoint->meeting_id = $meeting->id;
             $meetingPoint->point = -1;
+            $meetingPoint->description = "Teralambat memulai rapat||Starts meeting late";
             $meetingPoint->save();
         }
         
         Meeting::where('id', $meeting->id)
-                ->update(['status' => 1]);
+                ->update([
+                    'status' => 1,
+                    'real_start' => date("Y-m-d H:i:s", $date)
+                ]);
 
         UserMeeting::where('meeting_id', $meeting->id)
                 ->where('user_id', $user->id)
@@ -364,8 +378,10 @@ class MeetingController extends Controller
     {
         $request->validate([
             'meeting_id' => 'required|integer',
-            'date' => 'required|date'
+            'date' => 'required|date',
         ]); 
+
+        if (!$request->meeting_note) $request["meeting_note"] = "";
 
         $user = Auth::user();
         $meeting = Meeting::findOrFail($request['meeting_id']);
@@ -388,6 +404,7 @@ class MeetingController extends Controller
             $meetingPoint->user_id = $user->id;
             $meetingPoint->meeting_id = $meeting->id;
             $meetingPoint->point = 1;
+            $meetingPoint->description = "Mengakhiri rapat tepat waktu||Ends meeting on time";
             $meetingPoint->save();
             
             $arrAchievementId = [19, 20, 21];
@@ -397,16 +414,21 @@ class MeetingController extends Controller
             $meetingPoint->user_id = $user->id;
             $meetingPoint->meeting_id = $meeting->id;
             $meetingPoint->point = -1;
+            $meetingPoint->description = "Terlambat mengakhiri rapat||Ends meeting late";
             $meetingPoint->save();
         }
 
         Meeting::where('id', $meeting->id)
-                ->update(['status' => 2]);
+            ->update([
+                'status' => 2,
+                'real_end' => date("Y-m-d H:i:s", $date),
+                'meeting_note' => $request["meeting_note"]
+            ]);
 
         $acceptedSuggestion = Suggestion::join('agendas', 'agendas.id', '=', 'suggestions.agenda_id')
                 ->join('meetings', 'meetings.id', '=', 'agendas.meeting_id')
                 ->select('suggestions.*')
-                ->where('suggestions.accepted', 1)
+                // ->where('suggestions.accepted', 1)
                 ->where('meetings.id', $meeting->id)
                 ->get();
 
@@ -414,11 +436,26 @@ class MeetingController extends Controller
             $meetingPoint = new MeetingPoint();
             $meetingPoint->user_id = $suggestion->user_id;
             $meetingPoint->meeting_id = $meeting->id;
-            $meetingPoint->point = 2;
+            $meetingPoint->point = 1;
+            $meetingPoint->description ="Memberikan saran||Giving suggestion";
             $meetingPoint->save();
 
-            $arrAchievementIdAccSugestion = [10, 11, 12];
+            $arrAchievementIdAccSugestion = [4, 5, 6];
             GamificationController::updateAchievement($suggestion->user_id, $arrAchievementIdAccSugestion);
+        }
+
+        foreach($acceptedSuggestion as $suggestion) {
+            if ($suggestion->accepted == 1) {
+                $meetingPoint = new MeetingPoint();
+                $meetingPoint->user_id = $suggestion->user_id;
+                $meetingPoint->meeting_id = $meeting->id;
+                $meetingPoint->point = 2;
+                $meetingPoint->description = "Saran diterima||Suggestion accepted";
+                $meetingPoint->save();
+    
+                $arrAchievementIdAccSugestion = [10, 11, 12];
+                GamificationController::updateAchievement($suggestion->user_id, $arrAchievementIdAccSugestion);
+            }
         }
                 
         $userMeetings = UserMeeting::where('meeting_id', $meeting->id)->get();
@@ -557,6 +594,22 @@ class MeetingController extends Controller
             ];
             NotificationController::sendNotification($userToken, $data);
         }
+    }
+
+    public function getMeetingPointLog(Request $request) {
+        $request->validate([
+            'meeting_id' => 'required|integer'
+        ]);
+
+        $user = Auth::user();
+        $meeting = Meeting::findOrFail($request->meeting_id);
+
+        $point = DB::table('meeting_points')
+                ->where('meeting_id', $meeting->id)
+                ->where('user_id', $user->id)
+                ->select('point', 'description')->get();
+
+        return MeetingPointResource::collection($point);
     }
 
     function generateRandomString($length = 30) {

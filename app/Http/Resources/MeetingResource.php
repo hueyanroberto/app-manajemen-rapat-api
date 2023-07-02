@@ -23,7 +23,9 @@ class MeetingResource extends JsonResource
             'location' => $this->location,
             'description' => $this->description,
             'code' => $this->code,
-            'status' => $this->status
+            'status' => $this->status,
+            'real_start' => date("c", strtotime($this->real_start)),
+            'real_end' => date("c", strtotime($this->real_end))
         ];
     }
 }

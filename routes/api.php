@@ -42,6 +42,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::post('/meeting/attachment', [MeetingController::class, 'uploadFile']);
     Route::get('/meeting/minutes', [MeetingController::class, 'getMinutes']);
+    Route::get('/meeting/point', [MeetingController::class, 'getMeetingPointLog']);
 
     Route::get('/meeting/task/{meetingId}', [TaskController::class, 'index']);
     Route::post('/meeting/task', [TaskController::class, 'store']);
@@ -50,9 +51,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/agenda', [AgendaController::class, 'store']);
     Route::put('/agenda', [AgendaController::class, 'update']);
     Route::delete('/agenda', [AgendaController::class, 'delete']);
+    Route::patch('/agenda', [AgendaController::class, 'updateStatus']);
+    Route::get('/agenda', [AgendaController::class, 'show']);
 
     Route::get('/agenda/suggestion', [SuggestionController::class, 'index']);
     Route::post('/agenda/suggestion', [SuggestionController::class, 'store']);
+    Route::delete('/agenda/suggestion', [SuggestionController::class, 'delete']);
     Route::put('/agenda/suggestion/accept', [SuggestionController::class, 'changeAcceptanceStatus']);
 
     Route::get('/profile', [UserController::class, 'getProfile']);

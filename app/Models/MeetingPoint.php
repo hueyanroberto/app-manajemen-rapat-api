@@ -9,5 +9,5 @@ class MeetingPoint extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['meeting_id', 'user_id', 'point'];
+    protected $fillable = ['meeting_id', 'user_id', 'point', 'description'];
 }
